@@ -40,7 +40,17 @@ export function RescheduleView({ bookingId }: { bookingId: string }) {
   }, [bookingId, pushToast, setSelectedFlight, setSelectedSeat]);
 
   async function handleSearch(query: SearchInput) {
-    setFlights(await searchFlights(query));
+    if (!booking?.flights) {
+      return;
+    }
+
+    const routeLockedQuery = {
+      ...query,
+      origin: booking.flights.origin,
+      destination: booking.flights.destination
+    };
+
+    setFlights(await searchFlights(routeLockedQuery));
   }
 
   async function submitReschedule() {
@@ -81,7 +91,8 @@ export function RescheduleView({ bookingId }: { bookingId: string }) {
           <div>
             <h1 className="text-xl font-semibold text-ink">Reschedule PNR {booking.pnr_code}</h1>
             <p className="text-sm text-slate-600">
-              Choose a new flight and seat. The database releases the old seat and locks the new one in one RPC.
+              Choose another {booking.flights?.origin} to {booking.flights?.destination} flight. The database releases
+              the old seat, locks the new one, and charges only the fare difference when the new flight is more expensive.
             </p>
           </div>
         </div>

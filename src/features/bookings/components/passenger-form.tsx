@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2 } from "lucide-react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useFieldArray, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export function PassengerForm({
       const result = await createBooking({ flightId: flight.id, seatId: seat.id, passengers: values.passengers });
       pushToast(`Booking confirmed. PNR ${result.pnrCode}`);
       resetBookingFlow();
-      router.push("/my-bookings");
+      router.push(`/booking/confirmation/${result.bookingId}` as Route);
       router.refresh();
     } catch (error) {
       pushToast(error instanceof Error ? error.message : "Booking failed", "error");

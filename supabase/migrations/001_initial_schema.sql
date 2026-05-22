@@ -62,9 +62,9 @@ create table public.reschedules (
   constraint reschedules_flight_change_check check (old_flight_id <> new_flight_id)
 );
 
-create unique index bookings_one_confirmed_per_seat_idx
+create unique index bookings_one_active_per_seat_idx
   on public.bookings(seat_id)
-  where status = 'confirmed';
+  where status in ('confirmed', 'rescheduled');
 
 create index flights_search_idx on public.flights(origin, destination, departs_at);
 create index seats_flight_idx on public.seats(flight_id);
@@ -108,7 +108,7 @@ as $$
 declare
   departure_time timestamptz;
 begin
-  if old.status = 'confirmed' and new.status = 'cancelled' then
+  if old.status in ('confirmed', 'rescheduled') and new.status = 'cancelled' then
     select departs_at into departure_time from public.flights where id = old.flight_id;
 
     if departure_time <= now() + interval '2 hours' then

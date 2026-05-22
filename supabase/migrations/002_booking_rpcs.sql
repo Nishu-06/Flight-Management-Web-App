@@ -1,3 +1,9 @@
+drop index if exists public.bookings_one_confirmed_per_seat_idx;
+
+create unique index if not exists bookings_one_active_per_seat_idx
+  on public.bookings(seat_id)
+  where status in ('confirmed', 'rescheduled');
+
 create or replace function public.book_seat(
   p_flight_id uuid,
   p_seat_id uuid,
@@ -114,8 +120,8 @@ begin
     raise exception 'Booking not found' using errcode = 'P0001';
   end if;
 
-  if selected_booking.status <> 'confirmed' then
-    raise exception 'Only confirmed bookings can be cancelled' using errcode = 'P0001';
+  if selected_booking.status not in ('confirmed', 'rescheduled') then
+    raise exception 'Only active bookings can be cancelled' using errcode = 'P0001';
   end if;
 
   select departs_at into departure_time
@@ -157,9 +163,10 @@ as $$
 declare
   current_user_id uuid := auth.uid();
   selected_booking public.bookings%rowtype;
+  old_flight public.flights%rowtype;
   new_flight public.flights%rowtype;
   new_seat public.seats%rowtype;
-  fee numeric := 1500;
+  fee numeric := 0;
   new_pnr text;
 begin
   if current_user_id is null then
@@ -172,8 +179,17 @@ begin
     and user_id = current_user_id
   for update;
 
-  if not found or selected_booking.status <> 'confirmed' then
-    raise exception 'Confirmed booking not found' using errcode = 'P0001';
+  if not found or selected_booking.status not in ('confirmed', 'rescheduled') then
+    raise exception 'Active booking not found' using errcode = 'P0001';
+  end if;
+
+  select * into old_flight
+  from public.flights
+  where id = selected_booking.flight_id
+  for update;
+
+  if not found then
+    raise exception 'Original flight not found' using errcode = 'P0001';
   end if;
 
   select * into new_flight
@@ -187,6 +203,10 @@ begin
     raise exception 'New flight is not available' using errcode = 'P0001';
   end if;
 
+  if old_flight.origin <> new_flight.origin or old_flight.destination <> new_flight.destination then
+    raise exception 'Reschedule must keep the same route' using errcode = 'P0001';
+  end if;
+
   select * into new_seat
   from public.seats
   where id = p_new_seat_id
@@ -196,6 +216,8 @@ begin
   if not found or new_seat.is_available is false then
     raise exception 'New seat is not available' using errcode = 'P0001';
   end if;
+
+  fee := greatest(0, new_flight.base_price - old_flight.base_price);
 
   update public.seats set is_available = true where id = selected_booking.seat_id;
   update public.seats set is_available = false where id = p_new_seat_id;
@@ -217,7 +239,7 @@ begin
       seat_id = p_new_seat_id,
       total_price = new_flight.base_price + new_seat.extra_fee + fee,
       pnr_code = new_pnr,
-      status = 'confirmed'
+      status = 'rescheduled'
   where id = selected_booking.id;
 
   return query select selected_booking.id, new_pnr, fee;

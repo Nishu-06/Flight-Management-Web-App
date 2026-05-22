@@ -18,8 +18,9 @@ export function BookingCard({ booking, onChanged }: { booking: Booking; onChange
   const { pushToast } = useToast();
   const flight = booking.flights;
   const seat = booking.seats;
+  const isActiveBooking = booking.status === "confirmed" || booking.status === "rescheduled";
   const cannotCancel =
-    !flight || booking.status !== "confirmed" || isBefore(new Date(flight.departs_at), addHours(new Date(), 2));
+    !flight || !isActiveBooking || isBefore(new Date(flight.departs_at), addHours(new Date(), 2));
 
   async function handleCancel() {
     setIsCancelling(true);
@@ -66,7 +67,7 @@ export function BookingCard({ booking, onChanged }: { booking: Booking; onChange
           Cancel
         </Button>
       </div>
-      {cannotCancel && booking.status === "confirmed" ? (
+      {cannotCancel && isActiveBooking ? (
         <p className="mt-3 text-xs text-slate-500">Cancellation is blocked within 2 hours of departure by the database RPC.</p>
       ) : null}
 

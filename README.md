@@ -66,7 +66,7 @@ Email: test.traveller@aerodesk.dev
 Password: Flight@12345
 ```
 
-If your hosted Supabase project rejects direct writes to `auth.identities`, create the same user from **Authentication → Users → Add user** with the credentials above, then run the public table seed normally.
+If your hosted Supabase project rejects direct writes to `auth.identities`, create the same user from **Authentication -> Users -> Add user** with the credentials above, then run the public table seed normally.
 
 ## Project Structure
 
@@ -102,9 +102,10 @@ Both stores use Zustand `persist` with `partialize`, so local storage contains o
 
 - Schema & RLS: complete in `supabase/migrations/001_initial_schema.sql`.
 - Seat-locking RPC: complete in `supabase/migrations/002_booking_rpcs.sql` using row locks and a partial unique index.
+- Booking confirmation page: complete in `src/app/booking/confirmation/[bookingId]/page.tsx`.
 - Seat map UX: complete in `src/features/seats/components/seat-map.tsx`.
 - Realtime sync: complete in `src/hooks/use-seat-realtime.ts`.
-- Cancel and reschedule logic: complete in `cancel_booking` and `reschedule_booking` RPCs.
+- Cancel and reschedule logic: complete in `cancel_booking` and `reschedule_booking` RPCs. Rescheduling is restricted to the same route and only charges a fare-difference fee when the new flight is more expensive.
 - 2-hour cancellation rule: enforced in both the DB trigger and cancellation RPC.
 - Zustand persistence: complete in `src/stores`.
 - Responsive UI: implemented with mobile-first Tailwind layouts.
@@ -121,7 +122,7 @@ Both stores use Zustand `persist` with `partialize`, so local storage contains o
 - [x] PWA setup is included.
 - [x] Install prompt banner for first-time visitors.
 - [ ] Public GitHub repository with descriptive commit history.
-- [ ] Deployed Vercel production URL.
+- [x] Deployed Vercel production URL.
 - [ ] Lighthouse PWA screenshot in README.
 
 ## Lighthouse PWA Screenshot
@@ -135,7 +136,7 @@ corepack pnpm build
 corepack pnpm start
 ```
 
-Then open Chrome DevTools → Lighthouse → PWA → Analyze page load.
+Then open Chrome DevTools -> Lighthouse -> PWA -> Analyze page load.
 
 ## Verification
 
@@ -168,4 +169,4 @@ Deploy to Vercel, set the same public Supabase env vars, and run the Supabase mi
 
 ## Trade-offs
 
-Payment handling, admin flight management, and email ticket delivery are outside the assignment scope. Rescheduling is implemented as a protected route and atomic RPC, but a production airline workflow would normally include fare rules, inventory classes, payment collection for fees, and audit logging.
+Payment handling, admin flight management, and email ticket delivery are outside the assignment scope. Rescheduling is implemented as a protected route and atomic RPC with same-route enforcement and fare-difference fees, but a production airline workflow would normally include deeper fare rules, inventory classes, payment collection, and audit logging.
